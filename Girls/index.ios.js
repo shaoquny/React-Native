@@ -108,14 +108,14 @@ var WelcomeView = React.createClass({
   },
 
   // componentWillMount() {
-  //   fetch('http://192.168.90.106:4399')
-  //       .then((response) => response.json())
-  //       .then((responseData) => {
-  //         picUrls = responseData;
-  //         this.setState({
-  //           rowData: pageUrls.map(createWelcomeThumbRow)
-  //         });
-  //       }).done();
+  //   fetch(rootServer+'type=0&page='+this.state.page)
+  //     .then((response) => response.json())
+  //     .then((responseData) => {
+  //       this.setState({
+  //         page: responseData.page,
+  //         rowData: responseData.data
+  //       });
+  //     }).done();
   // },
 
   componentDidMount() {

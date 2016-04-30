@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "node node_modules/react-native/local-cli/cli.js start"
+    "start": "nohup node scraping_xxxiao/xxxiao_app.js > output.log 2>&1&echo $! > save_pid.txt & node node_modules/react-native/local-cli/cli.js start"
   },
   "dependencies": {
     "cheerio": "^0.20.0",

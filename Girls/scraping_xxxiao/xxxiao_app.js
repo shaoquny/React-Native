@@ -5,101 +5,63 @@ var express = require('express');
 // http://nodejs.org/api/url.html
 var url = require('url');
 
-var xxxiaoUrl = 'http://m.xxxiao.com/';
+var config = require('./config');
+var ServerConfig = config.ServerConfig;
+var ScrapXXXiaoConfig = config.ScrapXXXiaoConfig;
+var RequestType = ScrapXXXiaoConfig.RequestType;
 
-var TopicUrls = [];
-var CurrentPage = 0;
+var XXXiao = require('./xxxiao_scraping').XXXiao;
 
-var fetchTopicUrl = function(topicUrl, callback) {
-  console.log(topicUrl);
-  superagent.get(topicUrl)
-    .end(function (err, res) {
-      if (err) {
-        return console.error(err);
-      }
-      var $ = cheerio.load(res.text);
-      // 获取首页所有的链接
-      var topicList = [];
-      $('article .thumb-link').each(function (idx, element) {
-      var topic = {};
-        var $element = $(element);
-        var href = url.resolve(xxxiaoUrl, $element.attr('href'));
-        var $nextImg = $element.children('img');
-        var img = url.resolve(xxxiaoUrl, $nextImg.attr('src'));
-        topic.url = href;
-        topic.img = img;
-        topicList.push(topic);
-      });
-      TopicUrls.push(topicList);
-      var $element = $('div.nav-previous a');
-      var href = $element.attr('href');
-      if (href != null) {
-        var href = url.resolve(xxxiaoUrl, href);
-        fetchTopicUrl(href, callback);
-      }else {
-        console.log(TopicUrls);
-        callback();
-      }
-  });
-};
+// 服务器启动时预先抓取妹子列表
+XXXiao.RefreshGrilsList(null);
 
-fetchTopicUrl(xxxiaoUrl, function() {});
-
-var fetchUrl = function (picUrl, callback) {
-  superagent.get(picUrl)
-    .end(function(err, res) {
-      var PicUrls = [];
-      if (err) {
-        callback(err, []);
-      }
-      var $ = cheerio.load(res.text);
-      $('div.rgg_imagegrid a').each(function (idx, element) {
-        var $element = $(element);
-        var href = url.resolve(picUrl, $element.attr('href'));
-
-        PicUrls.push(href);
-      });
-      callback(null, PicUrls);
-    });
-};
-
+// 创建并启动http服务
 var app = express();
 app.get('/', function(req, res) {
   console.log(req.ip);
   var type = parseInt(req.query.type);
   switch(type) {
-    case 0: {
+    // 获取妹子列表，分页获取
+    case RequestType.GrilsList: {
       var page = parseInt(req.query.page);
-      CurrentPage = (page+TopicUrls.length)%TopicUrls.length;
-      res.send({
-        page : CurrentPage,
-        data : TopicUrls[CurrentPage]
+      XXXiao.GetGirlsList(page, function(data) {
+        res.send(data);
       });
       break;
     }
-    case 1: {
-      fetchUrl(req.query.url, function(err, urls) {
+    // 获取某个妹子的图片列表，通过妹子url获取
+    case RequestType.GrilPicList: {
+      XXXiao.FetchGirlPicList(req.query.url, function(err, picUrls) {
         if (err) {
           console.log(err);
+          res.send(err);
+        }else {
+          res.send(picUrls);
         }
-        res.send(urls);
       });
       break;
     }
-    case 2: {
-      fetchTopicUrl(xxxiaoUrl, function() {
-        res.send({
-          page : CurrentPage,
-          data : TopicUrls[CurrentPage]
-        });
+    // 刷新服务端妹子列表
+    case RequestType.RefreshGrilsList: {
+      XXXiao.RefreshGrilsList(function(err) {
+        if (err) {
+          res.send(err);
+        }else {
+          XXXiao.GetGirlsList(0, function(data){
+            res.send(data);
+          });
+        }
       });
       break;
     }
     default:
+    {
+      res.send('Err: Wrong request type');
       break;
+    }
   }
 });
-app.listen(8082);
+app.listen(ServerConfig.ServerPort);
 
 
 

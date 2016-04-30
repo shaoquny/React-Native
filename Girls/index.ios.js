@@ -22,7 +22,7 @@ import React, {
   CameraRoll
 } from 'react-native';
 
-var rootServer = 'http://127.0.0.1:8082/?';
+var requestUtils = require('./scraping_xxxiao/request_utils').ServerUtil;
 var picUrls;
 
 class XXXiao extends React.Component {
@@ -61,7 +61,8 @@ var FeedView = React.createClass({
   },
 
   componentDidMount() {
-    fetch(rootServer+'type=1&url='+this.props.reqUrl)
+    //获取所选妹子的图片列表
+    fetch(requestUtils.GetRequestGirlListUrlByUrl(this.props.reqUrl))
       .then((response) => response.json())
       .then((responseData) => {
         picUrls = responseData;
@@ -119,7 +120,8 @@ var WelcomeView = React.createClass({
   // },
 
   componentDidMount() {
-    fetch(rootServer+'type=0&page='+this.state.page)
+    // 获取妹子列表
+    fetch(requestUtils.GetRequestGirlsListUrl(this.state.page))
         .then((response) => response.json())
         .then((responseData) => {
           this.setState({
@@ -162,6 +164,11 @@ var WelcomeView = React.createClass({
               </Text>
             </View>
           </TouchableHighlight>
+          <View style={styles.bottomPageCell}>
+            <Text style={styles.bottomButton}>
+              {this.state.page}
+            </Text>
+          </View>
           <TouchableHighlight style={styles.bottomButtonCell} underlayColor='#909090' onPress={this._onPressedNext}>
             <View>
               <Text style={styles.bottomButton}>
@@ -178,7 +185,8 @@ var WelcomeView = React.createClass({
     this.setState({
       isRefreshing: true
     });
-    fetch(rootServer+'type=2')
+    // 刷新服务端妹子列表数据
+    fetch(requestUtils.GetRefreshGirlsListUrl())
           .then((response) => response.json())
           .then((responseData) => {
             picUrls = responseData;
@@ -200,7 +208,8 @@ var WelcomeView = React.createClass({
 
   _onPressedPrevious() {
     this.state.scrollView.scrollTo({y:0});
-    fetch(rootServer+'type=0&page='+(this.state.page-1))
+    // 获取上一页妹子列表，获取后会返回所取页面信息，服务端页面循环（也就是第一页的上一页为最后一页，最后一页的下一页为第一页）
+    fetch(requestUtils.GetRequestGirlsListUrl(this.state.page-1))
         .then((response) => response.json())
         .then((responseData) => {
           this.setState({
@@ -212,7 +221,8 @@ var WelcomeView = React.createClass({
 
   _onPressedNext() {
     this.state.scrollView.scrollTo({y:0});
-    fetch(rootServer+'type=0&page='+(this.state.page+1))
+    // 获取下一页妹子列表
+    fetch(requestUtils.GetRequestGirlsListUrl(this.state.page+1))
         .then((response) => response.json())
         .then((responseData) => {
           this.setState({
@@ -239,6 +249,7 @@ var Thumb = React.createClass({
   },
 
   _onPressed() {
+    // 保存所点图片到ios相册中
     CameraRoll.saveImageWithTag(this.props.uri)
       .then(function(data) {
           console.log(data);
@@ -304,6 +315,12 @@ const styles = StyleSheet.create({
   bottomButtonCell: {
     flex: 1,
     height: 50,
+  },
+  bottomPageCell: {
+    flex: 1,
+    width: 60,
+    height:50,
+    backgroundColor: '#f0f0f0',
   },
   bottomButton: {
     fontSize: 20,
